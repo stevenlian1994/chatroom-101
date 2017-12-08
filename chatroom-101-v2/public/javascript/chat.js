@@ -8,13 +8,15 @@ var output = document.getElementById("output"),
     feedback = document.getElementById("feedback"), 
     handle = document.getElementById("handle");
     
+var foo = document.getElementById("foo");
 //Emit events
 
 btn.addEventListener("click", function(){
-   socket.emit("chat", {
+    socket.emit("chat", {
        message: message.value,
        handle: handle.value
    });
+
 });
 
 message.addEventListener("keypress", function(){
@@ -25,6 +27,9 @@ message.addEventListener("keypress", function(){
 socket.on("chat", function(data){
     feedback.innerHTML = ""
     output.innerHTML += "<p><strong>" + data.handle + ":</strong>" + data.message + "</p>"
+    
+    socket.emit("chatlog", output.innerHTML
+        );
     
 });
 
