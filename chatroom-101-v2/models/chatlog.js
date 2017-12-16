@@ -1,7 +1,9 @@
 var mongoose = require("mongoose");
 
 var chatlogSchema = new mongoose.Schema({
-   history: String
+   handle: String,
+   message: String,
+   time_stamp : String
 });
 
 module.exports = mongoose.model("Chatlog", chatlogSchema);

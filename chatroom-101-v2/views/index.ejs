@@ -1,27 +1,28 @@
-<!DOCTYPE html>
-<html>
-   <head>
-        <title>chatroom-101-v2</title>
-        <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/2.0.4/socket.io.js"></script>
-        <link rel="stylesheet" type="text/css" href="/css/styles.css">
-    </head>
-    <body>
-        <div id="foo">
-            <p>Hello</p>
-        </div>
-        
-        <div id="chat-room">
-            <div id="chat-window">
-                <div id="output"></div>
-                <div id="feedback"></div>
-            </div>
-            <div>
-                <input id="handle" type="text" placeholder="Handle">
-                <input id="message" type="text" placeholder="Message">
-                <button id="send">Send</button>
-            </div>
-        </div>
-        
-    <script src="/javascript/chat.js"></script>
-    </body>
-</html>
+<h1>INDEX</h1>
+
+<!--Log In-->
+<div id="log_in_container">
+    <h2>Log In</h2>
+    <form action="/login" method="post" id="log_in_form">
+        <input type="text" id= "log_in_username" name="username" placeholder="Username">
+        <input type="password" id= "log_in_password" name="password" placeholder="Password">
+        <button>Submit</button>
+    </form>
+
+</div>
+
+
+<!--Sign Up-->
+<div class="sign_up_container">
+    <h2>Sign Up</h2>
+    <form action="/signup" method="post" id="sign_up_form">
+        <input type="text" id= "sign_up_username" name="username" placeholder="Username">
+        <input type="password" id="sign_up_password" name="password" placeholder="Password">
+        <button>Submit</button>
+    </form>
+
+</div>
+
+
+<!--Link to chatroom-->
+<a href="/chatroom">Go to Chatroom</a>

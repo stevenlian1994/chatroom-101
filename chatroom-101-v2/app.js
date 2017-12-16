@@ -1,6 +1,11 @@
 var express = require("express"), 
     socket = require("socket.io"),
     mongoose = require("mongoose"),
+    bodyParser = require("body-parser"),
+    passport = require("passport"),
+    LocalStrategy = require("passport-local"),
+    User = require("./models/user"),
+    moment = require("moment-timezone"),
     Chatlog = require("./models/chatlog");
 
 //App Setup
@@ -13,52 +18,96 @@ var server = app.listen(port, function(){
 mongoose.Promise = global.Promise;
 mongoose.connect("mongodb://localhost/chatroom-101", {useMongoClient: true});
     
+app.use(bodyParser.urlencoded({extended: true}));
+
 //Static Files
 app.use(express.static("public"));
 app.set("view engine", "ejs");
 
-
-    
-app.get("/", function(req,res){
-    
-    //chatlog.history should be a String like "<p>Hello</p>" which should be able to translate into <p>Hello</p> after ejs template
-    // Chatlog.find({}, function(err, chatlog){
-    //     if(err){
-    //         console.log(err);
-    //     } else {
-    //       res.render("index", {chatlog: chatlog}); 
-    //     }
-    // });
-    
-    console.log( Chatlog.find({}).limit(1).sort({$natural:-1}));
-    console.log( Chatlog.findOne({}, {sort:{$natural:-1}}));
-    console.log( Chatlog.find({}).sort({$natural:-1}).limit(1));
-    
+app.get("/", function(req, res){
     res.render("index");
-
 })
 
-var io = socket.listen(server);
-io.on("connection", function(socket){
-    console.log("made socket connection: ", socket.id);
+//PASSPORT CONFIGURATION
+app.use(require("express-session")({
+    secret: "Once again Rusty cutest",
+    resave: false,
+    saveUninitialized: false
+}));
+
+app.use(passport.initialize());
+app.use(passport.session());
+passport.use(new LocalStrategy(User.authenticate()));
+passport.serializeUser(User.serializeUser());
+passport.deserializeUser(User.deserializeUser());
+
     
-    socket.on("chat", function(data){
-        io.sockets.emit("chat", data);
-        
-    });
-    
-    socket.on("chatlog", function(data){
-        // console.log(data); #=> stirng
-        //save chatlog
-        var newChatlog = {history: data};
-        // //create a new campground and save to DB
-        Chatlog.create(newChatlog, function(err, newlyCreated){
+app.get("/chatroom", isLoggedIn, function(req,res){
+
+    Chatlog.find({}, function(err, allMessages){
         if(err){
             console.log(err);
         } else {
-            console.log("updated chatlog in mongodb")
+           res.render("chatroom", {messages: allMessages, user_username: req.user.username}); 
         }
     });
+
+});
+
+app.post("/signup", function(req,res){
+    var newUser = new User({username: req.body.username});
+    User.register(newUser, req.body.password, function(err, newUser){
+        if(err) {
+            console.log(err);
+            return res.render("");
+        } else {
+            passport.authenticate("local")(req, res, function(){
+                console.log("added new user to mongodb");
+                res.redirect("/chatroom");
+            });
+        }
+    })
+})
+
+//handling login logic
+app.post("/login", passport.authenticate("local",
+    {
+        successRedirect: "/chatroom",
+        failureRedirect: "/"
+    }), function(req, res){
+    
+});
+
+app.get("/logout", function(req, res){
+    req.logout();
+    res.render("index");
+});
+
+
+
+
+var io = socket.listen(server);
+io.on("connection", function(socket){
+    console.log("made socket connection:", socket.id)
+    
+    socket.on("chat", function(data){
+        var time_stamp = moment(Date.now()).format("MMMM Do YYYY, h:mm:ss a"); 
+        io.sockets.emit("chat", data, time_stamp);
+        
+        // var a = Date.now();
+                 
+        // comment.time = moment(a).format('LL'); 
+    
+        //Save Chatlog in MongoDB
+        var newChatlog = {handle: data.handle, message: data.message, time_stamp: time_stamp};
+        
+        Chatlog.create(newChatlog, function(err, newlyCreated){
+            if(err){
+                console.log(err);
+            } else {
+                console.log("added new chatlog to mongodb")
+            }
+        });
     });
     
     socket.on("typing", function(data){
@@ -66,4 +115,10 @@ io.on("connection", function(socket){
     })
 });
 
-
+function isLoggedIn(req,res,next){
+    if(req.isAuthenticated()){
+        return next();
+    } else {
+        res.redirect("/");
+    }
+};
