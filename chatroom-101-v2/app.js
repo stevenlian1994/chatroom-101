@@ -4,8 +4,9 @@ var express = require("express"),
     bodyParser = require("body-parser"),
     passport = require("passport"),
     LocalStrategy = require("passport-local"),
-    User = require("./models/user"),
     moment = require("moment-timezone"),
+    User = require("./models/user"),
+    Users_online = require("./models/users_online"),
     Chatlog = require("./models/chatlog");
 
 //App Setup
@@ -54,8 +55,12 @@ app.get("/chatroom", isLoggedIn, function(req,res){
 
 });
 
+
+
 app.post("/signup", function(req,res){
     var newUser = new User({username: req.body.username});
+    
+
     User.register(newUser, req.body.password, function(err, newUser){
         if(err) {
             console.log(err);
@@ -83,20 +88,15 @@ app.get("/logout", function(req, res){
     res.render("index");
 });
 
-
-
-
 var io = socket.listen(server);
 io.on("connection", function(socket){
     console.log("made socket connection:", socket.id)
-    
+
+
     socket.on("chat", function(data){
         var time_stamp = moment(Date.now()).format("MMMM Do YYYY, h:mm:ss a"); 
         io.sockets.emit("chat", data, time_stamp);
-        
-        // var a = Date.now();
-                 
-        // comment.time = moment(a).format('LL'); 
+
     
         //Save Chatlog in MongoDB
         var newChatlog = {handle: data.handle, message: data.message, time_stamp: time_stamp};
@@ -113,6 +113,11 @@ io.on("connection", function(socket){
     socket.on("typing", function(data){
         socket.broadcast.emit("typing", data);
     })
+    
+    socket.on("checking_user_activity", function(data){
+        io.sockets.emit("checking_user_activity", data);
+    });
+    
 });
 
 function isLoggedIn(req,res,next){
